@@ -1,0 +1,10 @@
+name: parsem
+description: "Parser combinators: Construct complex parsers from simple building blocks. Similar to Parsec."
+version: 0.1.0
+
+authors:
+  - Ian Gregory <justcheesy@outlook.com>
+
+crystal: 1.4.1
+
+license: MIT
