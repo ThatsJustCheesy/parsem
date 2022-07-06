@@ -173,20 +173,26 @@ module Parsem
 
     # Choice operator: Returns a parser that applies the left parser. If it fails, but no input
     # was consumed, then applies the right parser instead.
-    def |(other : self) : self
-      self.class.new do |input_tokens, context|
+    def |(other : Parser(Token, OtherOutput)) : Parser(Token, Output | OtherOutput) forall OtherOutput
+      Parser(Token, Output | OtherOutput).new do |input_tokens, context|
         result = run(input_tokens, context)
 
         if !result.is_a?(ParseError) ||
            (!@allow_backtrack && result.@remainder.size != input_tokens.size)
           result
         else
+          # puts "failed: #{input_tokens.join} /// result: #{result}"
+          # puts "left backtracked" if @allow_backtrack && result.@remainder.size != input_tokens.size
+
           other_result = other.run(input_tokens, context)
 
           if !other_result.is_a?(ParseError) ||
              (!other.@allow_backtrack && other_result.@remainder.size != input_tokens.size)
             other_result
           else
+            # puts "failed: #{input_tokens.join} /// result: #{result}"
+            # puts "right backtracked" if other.@allow_backtrack && other_result.@remainder.size != input_tokens.size
+
             my_expected = result.@expected
             other_expected = other_result.@expected
 
@@ -249,7 +255,8 @@ module Parsem
     # and if that succeeds, then the right parser.
     #
     # On success, calls the output of the left parser, which must be a proc (function),
-    # with the output of the right parser as its sole argument. Produces as output the result of that call.
+    # with the output of the right parser as its sole argument. Produces as output
+    # the result of that call.
     #
     # To create a valid left-hand-side parser for this operation, use `Proc#^(Parser)`.
     def <=>(other : Parser(Token, OtherOutput)) forall OtherOutput
