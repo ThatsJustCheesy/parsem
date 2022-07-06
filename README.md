@@ -41,7 +41,7 @@ You'll make frequent use of these combinators:
 - Map operator `^`
   - Partially applies the (left) proc with the (right) parser's result as the first argument. Supply any additional arguments with `<=>` (sequencing proc-apply operator)
 
-For now, please see the [specs](tree/main/spec/) for usage examples.
+For now, please see the [specs](spec/) for usage examples.
 
 ## Contributing
 
