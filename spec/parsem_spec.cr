@@ -1,5 +1,6 @@
 require "./spec_helper"
 
+require "./arithmetic_expression_parser"
 require "./json_parser"
 
 include Parsem
