@@ -6,9 +6,7 @@ enum UnaryOperator
   Plus
   Minus
 end
-record UnaryOperation, operator : UnaryOperator, operand : Expression do
-  def_equals @operator, @operand
-end
+record UnaryOperation, operator : UnaryOperator, operand : Expression
 
 enum BinaryOperator
   Add
@@ -16,9 +14,7 @@ enum BinaryOperator
   Multiply
   Divide
 end
-record BinaryOperation, left : Expression, operator : BinaryOperator, right : Expression do
-  def_equals @left, @operator, @right
-end
+record BinaryOperation, left : Expression, operator : BinaryOperator, right : Expression
 
 record ParenthesizedGroup, grouped : Expression
 
