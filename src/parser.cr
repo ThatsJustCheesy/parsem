@@ -550,18 +550,13 @@ result.as(ParseError)
 end
 
 struct Proc(*T, R)
-  # Map operator: Returns a parser that that applies `parser`, then pipes its output
-  # through this proc.
+  # Map operator: Returns a parser that applies `parser`, then partially applies
+  # this proc with the result of `parser` as the first argument.
   #
-  # If `parser` succeeds, partially applies this proc with the output value as
-  # the first argument.
-  # Otherwise, fails without calling `block`.
-  #
-  # In this context, "partially applying" a proc doesn't necessarily call it straight away.
-  # Instead, the argument is stored in a known location in memory, and a new proc is returned
-  # that accepts the next argument, and stores it, and so on.
-  # The actual underlying proc is called once all of its arguments have been gathered,
-  # typically by applying subsequent parsers with `Parser#<=>(Parser)`.
+  # If this proc takes more than one argument, it will be implicitly
+  # [curried](https://en.wikipedia.org/wiki/Currying).
+  # In this case, the actual underlying proc is called once all of its arguments
+  # have been provided by additional parsers, applied with `Parser#<=>(Parser)`.
   def ^(parser : Parser(Token, Output)) forall Token, Output
     {% if T.size > 1 %}
       self.curry ^ parser
@@ -575,9 +570,9 @@ struct Proc(*T, R)
     {% end %}
   end
 
-  # Curries this proc.
+  # [Curries](https://en.wikipedia.org/wiki/Currying) this proc.
   #
-  # This exists to help implement `Proc#^(Parser)`.
+  # This exists to help implement `Proc#^(Parser)`, but you can use it yourself if you want.
   def curry
     {% begin %}
       {% for i in 0...T.size %}
