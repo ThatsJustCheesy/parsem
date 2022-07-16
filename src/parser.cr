@@ -436,6 +436,10 @@ result.as(ParseError)
     end
   end
 
+  # Defers the creation of `parser` until it is used.
+  # This allows parsers to be composed in terms of each other.
+  #
+  # WARNING: May incur a performance penalty.
   macro lazy(parser)
     (typeof({{parser}})).new do |input_tokens, context|
       {{parser}}.run(input_tokens, context)
