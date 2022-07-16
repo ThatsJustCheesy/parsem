@@ -1,7 +1,8 @@
 require "./spec_helper"
 
-require "./arithmetic_expression_parser"
-require "./json_parser"
+require "./infer_spec.cr"
+require "./examples/arithmetic_expression_parser"
+require "./examples/json_parser"
 
 include Parsem
 

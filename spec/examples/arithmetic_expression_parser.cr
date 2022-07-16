@@ -1,4 +1,4 @@
-require "./spec_helper"
+require "../spec_helper"
 
 include Parsem
 
@@ -23,7 +23,7 @@ class Expression
 
   property value : Value
 
-  def initialize(@value : Value)
+  def initialize(@value : Expression::Value)
   end
 
   def_equals @value
@@ -39,8 +39,8 @@ integer = Parsem.digit.repeat(1..)
   .name("integer")
 
 parenthesized_group =
-  ->Expression.new(Expression::Value) ^
-    (->ParenthesizedGroup.new(Expression) ^
+  infer(->Expression.new) ^
+    (infer(->ParenthesizedGroup.new) ^
       token('(') >> lazy(expression) << token(')'))
 
 unary_operator = alternatives([
@@ -48,8 +48,8 @@ unary_operator = alternatives([
   {'-', UnaryOperator::Minus},
 ].map { |char, op| token(char).map { op } })
 unary_operation =
-  ->Expression.new(Expression::Value) ^
-    (->UnaryOperation.new(UnaryOperator, Expression) ^
+  infer(->Expression.new) ^
+    (infer(->UnaryOperation.new) ^
       unary_operator <=>
       lazy(expression))
 

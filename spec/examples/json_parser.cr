@@ -1,4 +1,4 @@
-require "./spec_helper"
+require "../spec_helper"
 require "json"
 include Parsem
 
@@ -59,7 +59,7 @@ array = (
 ).map { |array| JSONValue.new(array) }.name("array")
 
 record KeyValuePair, key : String, value : JSONValue
-object_key_value_pair = ->KeyValuePair.new(String, JSONValue) ^
+object_key_value_pair = infer(->KeyValuePair.new) ^
                         string_raw.name("key") << ws << token(KEY_VALUE_DELIMITER) << ws <=>
                         lazy(value)
 

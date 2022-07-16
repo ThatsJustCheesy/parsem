@@ -1,4 +1,5 @@
 require "./parser"
+require "./infer"
 require "./character_classes"
 
 # TODO: Write documentation for `Parsem`
