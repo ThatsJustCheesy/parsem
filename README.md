@@ -1,11 +1,11 @@
 # Parsem
 
-Crystal library for [Parsec][parsec]-like _parser combinators_, which allow you to construct complex parsers out of simpler ones. Usually, this leads to highly compact parsing code, with a structure that very much resembles the grammar itself.
+Crystal library for [Parsec][]-like _parser combinators_, which allow you to construct complex parsers out of simpler ones. Usually, this leads to highly compact parsing code, with a structure that very much resembles the grammar itself.
 
-Heavily inspired by [FootlessParser][footless], a parser combinator library for Swift.
+Heavily inspired by [FootlessParser][], a parser combinator library for Swift.
 
 [parsec]: https://wiki.haskell.org/Parsec
-[footless]: https://github.com/kareman/FootlessParser
+[footlessparser]: https://github.com/kareman/FootlessParser
 
 ## Installation
 
@@ -41,7 +41,13 @@ You'll make frequent use of these combinators:
 - Map operator `^`
   - Partially applies the (left) proc with the (right) parser's result as the first argument. Supply any additional arguments with `<=>` (sequencing proc-apply operator)
 
-For now, please see the [specs](spec/) for usage examples.
+### Docs
+
+Please clone the repository, run `crystal docs`, and open the resulting `docs/index.html`.
+
+### Examples
+
+For now, please see [`spec/examples`](spec/examples).
 
 ## Contributing
 
