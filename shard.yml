@@ -1,6 +1,6 @@
 name: parsem
 description: "Parser combinators: Build complex parsers out of simpler ones. (Yet another Parsec clone)"
-version: 0.1.0
+version: 1.0.0
 
 authors:
   - Ian Gregory <justcheesy@outlook.com>

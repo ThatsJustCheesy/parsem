@@ -6,5 +6,5 @@ require "./character_classes"
 #
 # <https://github.com/ThatsJustCheesy/parsem>
 module Parsem
-  VERSION = "0.1.0"
+  VERSION = "1.0.0"
 end
