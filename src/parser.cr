@@ -112,6 +112,7 @@ module Parsem
     )
     end
 
+    # Private, do not use.
     def run(input_tokens, context)
       # puts "run for #{input_tokens.join}, name #{context.name}"
       result = @parse.call(input_tokens, context)
@@ -171,8 +172,12 @@ module Parsem
       self.new { |input_tokens| ParseError(Token).new(expected, actual, input_tokens) }
     end
 
-    # Choice operator: Returns a parser that applies the left parser. If it fails, but no input
-    # was consumed, then applies the right parser instead.
+    # Choice operator.
+    #
+    # Returns a parser that applies the left parser. If it fails **without consuming any input**,
+    # then applies the right parser instead.
+    #
+    # To allow backtracking when the left parser consumes input, tag it with `allow_backtrack`.
     def |(other : Parser(Token, OtherOutput)) : Parser(Token, Output | OtherOutput) forall OtherOutput
       Parser(Token, Output | OtherOutput).new do |input_tokens, context|
         result = run(input_tokens, context)
@@ -216,9 +221,11 @@ module Parsem
       end
     end
 
-    # Sequencing left-yield operator: Returns a parser that applies the left parser,
-    # and if that succeeds, then the right parser.
-    # On success, discards the output of the right parser.
+    # Sequencing left-yield operator.
+    #
+    # Returns a parser that applies the left parser, and if that succeeds, then the right parser.
+    #
+    # On success, keeps the output of the left parser, but discards that of the right parser.
     def <<(other : Parser(Token, OtherOutput)) : self forall OtherOutput
       self.class.new do |input_tokens, context|
         my_result = run(input_tokens, context)
@@ -235,9 +242,11 @@ module Parsem
       end
     end
 
-    # Sequencing right-yield operator: Returns a parser that applies the left parser,
-    # and if that succeeds, then the right parser.
-    # On success, discards the output of the left parser.
+    # Sequencing right-yield operator.
+    #
+    # Returns a parser that applies the left parser, and if that succeeds, then the right parser.
+    #
+    # On success, discards the output of the left parser, but keeps that of the right parser.
     def >>(other : Parser(Token, OtherOutput)) : Parser(Token, OtherOutput) forall OtherOutput
       Parser(Token, OtherOutput).new do |input_tokens, context|
         my_result = run(input_tokens, context)
@@ -251,8 +260,9 @@ module Parsem
       end
     end
 
-    # Sequencing proc-apply operator: Returns a parser that applies the left parser,
-    # and if that succeeds, then the right parser.
+    # Sequencing proc-apply operator.
+    #
+    # Returns a parser that applies the left parser, and if that succeeds, then the right parser.
     #
     # On success, calls the output of the left parser, which must be a proc (function),
     # with the output of the right parser as its sole argument. Produces as output
@@ -309,10 +319,7 @@ module Parsem
       end
     end
 
-    # Returns a parser that ascribes the next token to be consumed a human-friendly name,
-    # which may be displayed in error messages.
-    #
-    # If a name is already set, it is replaced.
+    # Ascribes the next token a user-friendly name for display in error messages.
     def name(name : String)
       self.class.new do |input_tokens, context|
         context.name = name
@@ -321,10 +328,8 @@ module Parsem
       end
     end
 
-    # Returns a parser that ascribes the next token to be consumed a human-friendly name,
-    # which may be displayed in error messages.
-    #
-    # If a name is already set, it is left alone.
+    # Ascribes the next token a user-friendly name for display in error messages,
+    # if it doesn't already have one.
     def name?(name : String)
       self.class.new do |input_tokens, context|
         context.name ||= name
@@ -333,6 +338,16 @@ module Parsem
       end
     end
 
+    # Makes the choice operator (`|`) always backtrack when this parser fails.
+    #
+    # Normally, backtracking only occurs if the failed parser didn't consume any input.
+    # This bypasses that restriction.
+    #
+    # NOTE: This must be applied **directly** to the parser that is composed with `|`,
+    #       not any of its descendants.
+    # NOTE: This makes `|` swallow **all of** this parser's error messages, too.
+    # WARNING: If you aren't careful, this can cause extremely bad performance
+    #          on invalid input.
     def allow_backtrack
       self.class.new(true) do |input_tokens, context|
         run(input_tokens, context)
@@ -416,6 +431,8 @@ result.as(ParseError)
       block ^ self
     end
 
+    # Maps `Parsem.extend` over this parser, which must output an array.
+    # Used to append the result of the next parser to this parser's output array.
     def extend
       ->Parsem.extend(Output, typeof(
         run([] of Token, Context.new)
@@ -423,14 +440,20 @@ result.as(ParseError)
       )) ^ self
     end
 
+    # Maps `Parsem.concat` over this parser, which must output an array.
+    # Used to concatenate arrays produced by this and the next parser.
     def concat
       ->Parsem.concat(Output, Output) ^ self
     end
 
+    # Shortcut for `self.map &.flatten`.
+    # Used to flatten arrays-of-arrays produced by this parser.
     def flatten
       map &.flatten
     end
 
+    # Shortcut for `self.map &.join`.
+    # Useful when this parser produces arrays of characters, but you want strings instead.
     def join
       map &.join
     end
