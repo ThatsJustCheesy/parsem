@@ -21,10 +21,6 @@ Heavily inspired by [FootlessParser][], a parser combinator library for Swift.
 
 ## Usage
 
-```crystal
-require "parsem"
-```
-
 Begin by finding or creating a right-recursive grammar for the language you want to parse. Then translate the grammar into Parsem parsers.
 
 You'll make frequent use of these combinators:
@@ -35,7 +31,7 @@ You'll make frequent use of these combinators:
   - Right-yield `>>`
     - Keeps only the result of the right parser
   - Proc-apply `<=>`
-    - Effectively keeps the result of both parsers, but must be used in conjunction with `^` (map operator)
+    - Effectively keeps the result of both parsers, but must be used in conjunction with `^` (map operator) or a related convenience method
 - Choice operator `|`
   - Runs the left parser; if it fails without consuming any input, runs the right parser instead
 - Map operator `^`
@@ -47,7 +43,30 @@ Please clone the repository, run `crystal docs`, and open the resulting `docs/in
 
 ### Examples
 
-For now, please see [`spec/examples`](spec/examples).
+#### CSV parser
+
+```crystal
+require "parsem"
+include Parsem
+
+# Adapted from https://github.com/kareman/FootlessParser#csv-parser
+# Thanks!
+
+DELIMITER = ','
+QUOTE     = '"'
+NEWLINE   = '\n'
+
+quoted_cell = token(QUOTE) >> not(QUOTE).repeat(..).join << token(QUOTE)
+unquoted_cell = none_of([DELIMITER, NEWLINE]).repeat(..).join
+cell = quoted_cell | unquoted_cell
+
+row = (cell << token(DELIMITER)).repeat(..).extend <=> cell
+csv = (row << token(NEWLINE)).repeat(..).extend <=> row
+```
+
+#### More (complex) examples
+
+Please see [`spec/examples`](spec/examples) for more, including an arithmetic expression parser and a pseudo-JSON parser.
 
 ## Contributing
 
