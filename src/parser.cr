@@ -1,19 +1,37 @@
 module Parsem
   extend self
 
+  # Description of why a parser failed.
   struct ParseError(Token)
+    # Description of the input that was expected by the parser.
+    #
+    # `nil` means unknown.
+    # Other cases are explained in their respective types' docs.
+    getter expected : Nil | EndOfInput | OneOf(Token) | NoneOf(Token)
+
+    # Description of the input actually encountered.
+    #
+    # `Token` is a single invalid token.
+    # `Array(Token)` is a sequence of tokens that, taken together, are invalid.
+    # Other cases are explained in their respective types' docs.
+    getter actual : FailParser | EndOfInput | Token | Array(Token)
+
+    # - As `ParseError#actual`: An unconditonally failing parser was applied.
     struct FailParser
       def to_s(io)
         io << "usage of Parser.fail()"
       end
     end
 
+    # - As `ParseError#expected`: More input was present than expected.
+    # - As `ParseError#actual`: Input ended unexpectedly.
     struct EndOfInput
       def to_s(io)
         io << "end of input"
       end
     end
 
+    # - As `ParseError#expected`: One of these tokens was expected, but none were found.
     struct OneOf(Token)
       def initialize(@tokens : Array(Token | String))
       end
@@ -34,6 +52,8 @@ module Parsem
       end
     end
 
+    # - As `ParseError#expected`: Any token other than one of these was expected, but
+    #                             one of these or end-of-input was found.
     struct NoneOf(Token)
       def initialize(@tokens : Array(Token | String))
       end
@@ -56,6 +76,7 @@ module Parsem
     # alias Expected(Token) = Nil | EndOfInput | OneOf(Token) | NoneOf(Token)
     # alias Actual(Token) = FailParser | EndOfInput | Token | Array(Token)
 
+    # :nodoc:
     def initialize(
       @expected : Nil | EndOfInput | OneOf(Token) | NoneOf(Token),
       @actual : FailParser | EndOfInput | Token | Array(Token),
@@ -102,17 +123,27 @@ module Parsem
     end
   end
 
+  # Parsem's composable parser type.
+  #
+  # Generic type parameters:
+  # - `Token`: Type of data the parser reads as input.  \
+  #    Often characters, but can be anything, which is useful if you have
+  #    a separate lexical analysis step that first tokenizes your input.
+  # - `Output`: Type of data the parser produces as output.  \
+  #             You can shape the output using the mapping operations `Proc#^` and `#map`,
+  #             or convenience methods like `#extend` and `#concat`.
   struct Parser(Token, Output)
     # Not supported by Crystal (yet?)
     # record ParseSuccess, output : Token, remainder : Array(Token)
 
+    # :nodoc:
     def initialize(
       @allow_backtrack = false,
       &@parse : (Array(Token), Context) -> ParseError(Token) | NamedTuple(output: Output, remainder: Array(Token))
     )
     end
 
-    # Private, do not use.
+    # :nodoc:
     def run(input_tokens, context)
       # puts "run for #{input_tokens.join}, name #{context.name}"
       result = @parse.call(input_tokens, context)
@@ -306,8 +337,10 @@ module Parsem
       end
     end
 
-    # Returns a new parser that applies this parser, without consuming any input.
-    # The new parser succeeds when this parser fails, and vice versa.
+    # Returns a new parser that applies this parser, without consuming any input,
+    # and succeeds only when this parser fails.
+    #
+    # This parser must output `Token` or `Array(Token)`.
     def not_ahead
       Parser(Token, Nil).new do |input_tokens, context|
         result = run(input_tokens, context)
@@ -348,6 +381,7 @@ module Parsem
     # NOTE: This makes `|` swallow **all of** this parser's error messages, too.
     # WARNING: If you aren't careful, this can cause extremely bad performance
     #          on invalid input.
+    # BUG: Backtracking may result in confusing and unintuitive error messages.
     def allow_backtrack
       self.class.new(true) do |input_tokens, context|
         run(input_tokens, context)
@@ -469,6 +503,7 @@ result.as(ParseError)
     end
   end
 
+  # Parses `token`.
   def token(token : Token) : Parser(Token, Token) forall Token
     Parser(Token, Token).new do |input_tokens, context|
       if !input_tokens.empty? && (next_token = input_tokens.first) == token
@@ -485,6 +520,7 @@ result.as(ParseError)
     end
   end
 
+  # Parses any token except `token`.
   def not(token : Token) : Parser(Token, Token) forall Token
     Parser(Token, Token).new do |input_tokens, context|
       if !input_tokens.empty? && (next_token = input_tokens.first) != token
@@ -499,10 +535,12 @@ result.as(ParseError)
     end
   end
 
+  # Parses any token of type `type`.
   def any(type : Token.class) : Parser(Token, Token) forall Token
     none_of([] of Token)
   end
 
+  # Parses any single token of `tokens`.
   def one_of(tokens : Array(Token)) : Parser(Token, Token) forall Token
     Parser(Token, Token).new do |input_tokens, context|
       next_token = input_tokens.first?
@@ -520,6 +558,7 @@ result.as(ParseError)
     end
   end
 
+  # Parses any single token **not in** `tokens`.
   def none_of(tokens : Array(Token)) : Parser(Token, Token) forall Token
     Parser(Token, Token).new do |input_tokens, context|
       next_token = input_tokens.first?
@@ -537,6 +576,12 @@ result.as(ParseError)
     end
   end
 
+  # Folds the choice operator (`Parser#|`) over `parsers`.
+  #
+  # That is, `alternatives([parser_a, parser_b, parser_c])`
+  # is the same as `parser_a | parser_b | parser_c`.
+  #
+  # Fails unconditionally if `parsers` is empty.
   def alternatives(parsers : Array(Parser(Token, Output))) : Parser(Token, Output) forall Token, Output
     parsers.reduce(Parser(Token, Output).fail) do |acc, next_parser|
       acc | next_parser
@@ -577,7 +622,9 @@ result.as(ParseError)
 end
 
 struct Proc(*T, R)
-  # Map operator: Returns a parser that applies `parser`, then partially applies
+  # Map operator.
+  #
+  # Returns a parser that applies `parser`, then partially applies
   # this proc with the result of `parser` as the first argument.
   #
   # If this proc takes more than one argument, it will be implicitly
