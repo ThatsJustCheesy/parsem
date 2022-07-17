@@ -1,5 +1,5 @@
 name: parsem
-description: "Parser combinators: Construct complex parsers from simple building blocks. Similar to Parsec."
+description: "Parser combinators: Build complex parsers out of simpler ones. (Yet another Parsec clone)"
 version: 0.1.0
 
 authors:
