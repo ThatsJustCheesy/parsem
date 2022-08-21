@@ -189,7 +189,7 @@ describe "JSON parser" do
       it "for large arrays of integers" do
         times = Benchmark.measure do
           json.parse(
-            "[#{(1..50_000).to_a.join(", ")}]"
+            "[#{(1..500_000).to_a.join(", ")}]"
           )
         end
         print_times times
@@ -199,7 +199,7 @@ describe "JSON parser" do
       it "for large arrays of strings" do
         times = Benchmark.measure do
           json.parse(
-            "[#{(1..50_000).map { |i| "\"#{i}\"" }.join(", ")}]"
+            "[#{(1..500_000).map { |i| "\"#{i}\"" }.join(", ")}]"
           )
         end
         print_times times
