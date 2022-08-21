@@ -74,13 +74,13 @@ module Parsem
 
     # Not supported by Crystal yet:
     # alias Expected(Token) = Nil | EndOfInput | OneOf(Token) | NoneOf(Token)
-    # alias Actual(Token) = FailParser | EndOfInput | Token | Array(Token)
+    # alias Actual(Token) = FailParser | EndOfInput | Token | Slice(Token)
 
     # :nodoc:
     def initialize(
       @expected : Nil | EndOfInput | OneOf(Token) | NoneOf(Token),
       @actual : FailParser | EndOfInput | Token | Array(Token),
-      @remainder : Array(Token)
+      @remainder : Slice(Token)
     )
       # puts "Actual: #{@actual}"
     end
@@ -139,7 +139,7 @@ module Parsem
     # :nodoc:
     def initialize(
       @allow_backtrack = false,
-      &@parse : (Array(Token), Context) -> ParseError(Token) | NamedTuple(output: Output, remainder: Array(Token))
+      &@parse : (Slice(Token), Context) -> ParseError(Token) | NamedTuple(output: Output, remainder: Slice(Token))
     )
     end
 
@@ -152,18 +152,24 @@ module Parsem
 
     # Applies the parser to `tokens`.
     # If it matches, returns the produced output; otherwise, returns a ParseError.
-    def parse(tokens : Array(Token)) : ParseError(Token) | Output
+    def parse(tokens : Slice(Token)) : ParseError(Token) | Output
       context = Context.new
       result = run(tokens, context)
 
       return result if result.is_a?(ParseError)
       return ParseError(Token).new(
         expected: ParseError::EndOfInput.new,
-        actual: result[:remainder],
+        actual: result[:remainder].to_a,
         remainder: result[:remainder]
       ) unless result[:remainder].empty?
 
       result[:output]
+    end
+
+    # Applies the parser to `tokens`.
+    # If it matches, returns the produced output; otherwise, returns a ParseError.
+    def parse(tokens : Array(Token)) : ParseError(Token) | Output
+      parse(tokens.to_unsafe.to_slice(size: tokens.size))
     end
 
     # Applies the parser to `string`.
@@ -304,11 +310,11 @@ module Parsem
       # I still can't believe this worked
       # Dear Crystal devs: Can I has type restrictions on self? Pretty please
       Parser(Token, typeof(
-        run([] of Token, Context.new)
-          .as({output: Output, remainder: Array(Token)})[:output]
+        run(Slice(Token).empty, Context.new)
+          .as({output: Output, remainder: Slice(Token)})[:output]
           .call(
-            other.run([] of Token, Context.new)
-              .as({output: OtherOutput, remainder: Array(Token)})[:output]
+            other.run(Slice(Token).empty, Context.new)
+              .as({output: OtherOutput, remainder: Slice(Token)})[:output]
           )
       )).new do |input_tokens, context|
         my_result = run(input_tokens, context)
@@ -469,8 +475,8 @@ result.as(ParseError)
     # Used to append the result of the next parser to this parser's output array.
     def extend
       ->Parsem.extend(Output, typeof(
-        run([] of Token, Context.new)
-          .as({output: Output, remainder: Array(Token)})[:output][0]
+        run(Slice(Token).empty, Context.new)
+          .as({output: Output, remainder: Slice(Token)})[:output][0]
       )) ^ self
     end
 
