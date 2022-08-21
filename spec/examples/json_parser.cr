@@ -1,4 +1,5 @@
 require "../spec_helper"
+require "benchmark"
 require "json"
 include Parsem
 
@@ -126,12 +127,6 @@ describe "JSON parser" do
         END
       ).should eq({"quote\"backslash\\tab\tlinebreak\n" => "value"})
     end
-
-    # it "doesn't take forever" do
-    #   json.parse(
-    #     "[#{(1..100000).to_a.join(", ")}]"
-    #   )
-    # end
   end
 
   context "given invalid input" do
@@ -188,4 +183,33 @@ describe "JSON parser" do
       ).to_s.should eq("ParseError: expected :, but found }")
     end
   end
+
+  {% if flag? :release %}
+    context "doesn't take forever" do
+      it "for large arrays of integers" do
+        times = Benchmark.measure do
+          json.parse(
+            "[#{(1..50_000).to_a.join(", ")}]"
+          )
+        end
+        print_times times
+        times.utime.should be < 1
+      end
+
+      it "for large arrays of strings" do
+        times = Benchmark.measure do
+          json.parse(
+            "[#{(1..50_000).map { |i| "\"#{i}\"" }.join(", ")}]"
+          )
+        end
+        print_times times
+        times.utime.should be < 1
+      end
+    end
+  {% end %}
+end
+
+private def print_times(times : Benchmark::BM::Tms)
+  puts "\n       user     system      total        real"
+  puts times
 end
