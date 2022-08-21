@@ -168,6 +168,10 @@ module Parsem
 
     # Applies the parser to `tokens`.
     # If it matches, returns the produced output; otherwise, returns a ParseError.
+    #
+    # WARNING: You must not resize `tokens` for the duration of this method.
+    #          Parsing is done on its internal array buffer for efficiency,
+    #          and resizing can invalidate the buffer.
     def parse(tokens : Array(Token)) : ParseError(Token) | Output
       parse(tokens.to_unsafe.to_slice(size: tokens.size))
     end
