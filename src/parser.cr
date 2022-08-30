@@ -357,7 +357,11 @@ module Parsem
         if result.is_a?(ParseError)
           {output: nil, remainder: input_tokens}
         else
-          ParseError.new(nil, result[:output], input_tokens)
+          ParseError(Token).new(
+            expected: nil,
+            actual: result[:output],
+            remainder: input_tokens
+          )
         end
       end
     end
