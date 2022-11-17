@@ -430,9 +430,13 @@ module Parsem
 
         num_parsed = 0
         until (
-                (!range.end.nil? && num_parsed >= (range.end.not_nil! - (range.excludes_end? ? 1 : 0))) ||
-                (result = run(remainder, context)).is_a?(ParseError)
-              )
+          # Ensure we don't exceed the upper limit of the range, if there is one
+          (!range.end.nil? && num_parsed >= (range.end.not_nil! - (range.excludes_end? ? 1 : 0))) ||
+          # If the repeated parser failed, it will fail next time, too
+          (result = run(remainder, context)).is_a?(ParseError) ||
+          # If nothing was parsed this time, nothing will be parsed next time, either
+          result.not_nil![:remainder] == remainder
+        )
           result = result.not_nil!
           num_parsed += 1
 
